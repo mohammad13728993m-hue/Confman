@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confman</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--panel:#151317;--line:#2a2630;--text:#d4d4da;--mute:#7a7684;--acc:#8a2be2;--accs:rgba(138,43,226,.4);--off:#4a4852;--on:#39ff88;--bad:#ff5d6c;--star:#ffc857}
+:root.light{--bg:#f3f1f8;--panel:#fff;--line:#dcd8e6;--text:#27242f;--mute:#7d778c;--off:#b9b4c6}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:radial-gradient(120% 70% at 50% 38%,rgba(138,43,226,.12) 0%,var(--bg) 62%) var(--bg);color:var(--text);font-family:"Vazirmatn","Nunito",system-ui,sans-serif;overflow:hidden;transition:background .4s,color .4s}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);opacity:0;visibility:hidden;transform:translateY(18px);transition:opacity .35s,transform .35s,visibility .35s}
+.view.on{opacity:1;visibility:visible;transform:none}
+
+/* home */
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0}
+.icon{width:42px;height:42px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-size:1.15rem;transition:.25s}
+.icon:hover{border-color:var(--acc);box-shadow:0 0 14px var(--accs)}
+.status{font-size:.85rem;font-weight:600;padding:6px 14px;border-radius:20px;background:var(--panel);border:1px solid var(--line);transition:.3s}
+.status.on{color:var(--on)}.status.off{color:var(--bad)}
+.spacer{width:42px}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.brand{font-weight:800;font-size:1.4rem;letter-spacing:.05em}
+.power{width:min(52vw,220px);aspect-ratio:1;border-radius:50%;background:var(--panel);border:2px solid var(--off);display:grid;place-items:center;transition:.4s;box-shadow:inset 0 0 30px rgba(0,0,0,.35)}
+.power svg{width:42%;stroke:var(--off);transition:.4s}
+.power:hover{transform:scale(1.03)}
+.power.on{border-color:var(--on);box-shadow:0 0 0 8px rgba(57,255,136,.07),0 0 60px rgba(57,255,136,.4),inset 0 0 30px rgba(57,255,136,.15)}
+.power.on svg{stroke:var(--on)}
+.sub{color:var(--mute);font-size:.8rem;text-align:center;max-width:80vw;line-height:1.9}
+.bottom{padding:14px 16px 18px}
+.btn{width:100%;padding:14px;border-radius:16px;background:var(--panel);border:1px solid var(--line);font-weight:600;transition:.25s}
+.btn:hover{border-color:var(--acc);box-shadow:0 0 18px var(--accs);transform:translateY(-2px)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* list */
+.bar{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px;gap:8px}
+.bar h2{flex:1;text-align:center;font-size:1rem;font-weight:600}
+.chip{padding:9px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);font-size:.86rem;white-space:nowrap;transition:.25s}
+.chip:hover{border-color:var(--acc);box-shadow:0 0 12px var(--accs)}
+.chip.danger{color:var(--bad)}.chip.acc{color:var(--acc)}
+.search{margin:4px 14px 6px;padding:12px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--text);font:inherit}
+.list{flex:1;overflow:auto;padding:6px 14px;display:flex;flex-direction:column;gap:10px}
+.label{font-size:.78rem;color:var(--mute);padding:4px 4px 0}
+.item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:var(--panel);border:1px solid var(--line);cursor:pointer;transition:.25s}
+.item:hover{border-color:var(--acc)}
+.item.sel{border-color:var(--acc);box-shadow:0 0 18px var(--accs)}
+.name{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ping{font-size:.8rem;color:var(--mute);direction:ltr;min-width:52px;text-align:center}
+.ping.good{color:var(--on)}.ping.bad{color:var(--bad)}
+.copy{padding:6px 12px;border-radius:10px;background:var(--acc);color:#fff;font-size:.8rem;display:none}
+.item.sel .copy{display:block}
+.star{font-size:1.25rem;color:var(--off);transition:.2s}
+.star.f{color:var(--star)}
+.star:hover{transform:scale(1.2)}
+.empty{margin:auto;color:var(--mute);text-align:center;line-height:2}
+.foot{display:flex;gap:10px;padding:12px 14px 18px}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:5;opacity:0;visibility:hidden;transition:.3s}
+.modal.on{opacity:1;visibility:visible}
+.sheet{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:18px;display:flex;flex-direction:column;gap:12px;transform:translateY(30px);transition:.3s}
+.modal.on .sheet{transform:none}
+textarea{width:100%;height:140px;background:var(--bg);border:1px solid var(--line);border-radius:14px;color:var(--text);padding:12px;font:.8rem monospace;direction:ltr;resize:none}
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);padding:10px 18px;border-radius:12px;font-size:.85rem;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="view on" id="home">
+  <div class="top">
+    <button class="icon" id="theme" aria-label="تغییر تم">🌙</button>
+    <div class="status off" id="status">قطع</div>
+    <div class="spacer"></div>
+  </div>
+  <div class="center">
+    <div class="brand">Confman</div>
+    <button class="power" id="power" aria-label="روشن/خاموش">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>
+    </button>
+    <div class="sub">نمایش آزمایشی؛ اتصال واقعی را اپ VPN شما انجام می‌دهد.</div>
+  </div>
+  <div class="bottom"><button class="btn" id="openList">نمایش لیست کانفیگ‌ها</button></div>
+</section>
+
+<section class="view" id="listView">
+  <div class="bar">
+    <button class="chip danger" id="reset">ریست کردن کانفیگ‌ها</button>
+    <h2>کانفیگ‌ها</h2>
+    <button class="chip acc" id="pingAll">تست پینگ</button>
+  </div>
+  <input class="search" id="search" type="search" placeholder="جستجوی نام کانفیگ..." autocomplete="off">
+  <div class="list" id="list"></div>
+  <div class="foot">
+    <button class="btn" id="back">بازگشت</button>
+    <button class="btn primary" id="add">افزودن کانفیگ</button>
+  </div>
+</section>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <strong>افزودن کانفیگ</strong>
+    <textarea id="input" placeholder="لینک کانفیگ را paste کنید. هر خط یک کانفیگ."></textarea>
+    <div class="foot" style="padding:0">
+      <button class="btn" id="cancel">انصراف</button>
+      <button class="btn primary" id="save">ذخیره</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEY = "confman.v2";
+// نمونه‌ها فقط برای نمایش‌اند؛ configData متن اصلی و مخفی است و هرگز در لیست نشان داده نمی‌شود.
+const SAMPLE = [
+  {id:"s1", name:"آلمان - فرانکفورت", configData:"vless://00000000-0000-0000-0000-000000000001@sample1.example.invalid:443#DE"},
+  {id:"s2", name:"ترکیه - استانبول", configData:"vless://00000000-0000-0000-0000-000000000002@sample2.example.invalid:443#TR"},
+  {id:"s3", name:"هلند - آمستردام", configData:"trojan://sample-pass@sample3.example.invalid:443#NL"},
+  {id:"s4", name:"فنلاند - هلسینکی", configData:"vless://00000000-0000-0000-0000-000000000004@sample4.example.invalid:443#FI"},
+  {id:"s5", name:"امارات - دبی", configData:"ss://c2FtcGxl@sample5.example.invalid:8388#AE"}
+];
+let S = {on:false, theme:"dark", favs:[], configs:SAMPLE.map(c=>({...c}))};
+let selected = null, q = "", pings = {};
+
+try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d) S = {...S, ...d}; }catch(e){}
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} };
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),1800); }
+
+function applyTheme(){ document.documentElement.classList.toggle("light", S.theme==="light"); $("theme").textContent = S.theme==="light" ? "☀️" : "🌙"; }
+function applyPower(){ $("power").classList.toggle("on", S.on); const s=$("status"); s.textContent = S.on ? "وصل شده" : "قطع"; s.className = "status "+(S.on?"on":"off"); }
+
+function show(id){ ["home","listView"].forEach(v=>$(v).classList.toggle("on", v===id)); if(id==="listView") render(); }
+
+function row(c){
+  const p = pings[c.id], fav = S.favs.includes(c.id);
+  const cls = p==null ? "" : p<0 ? "bad" : p<250 ? "good" : "";
+  const txt = p==null ? "" : p<0 ? "ناموفق" : p+" ms";
+  return `<div class="item ${c.id===selected?"sel":""}" data-id="${c.id}">
+    <button class="star ${fav?"f":""}" data-act="fav" aria-label="محبوب">${fav?"★":"☆"}</button>
+    <span class="name">${esc(c.name)}</span>
+    <span class="ping ${cls}">${txt}</span>
+    <button class="copy" data-act="copy">کپی</button></div>`;
+}
+function render(){
+  const box = $("list");
+  if(!S.configs.length){ box.innerHTML='<div class="empty">لیست خالی است.<br>با «افزودن کانفیگ» شروع کنید.</div>'; return; }
+  const f = S.configs.filter(c=>c.name.toLowerCase().includes(q));
+  if(!f.length){ box.innerHTML='<div class="empty">موردی پیدا نشد.</div>'; return; }
+  const favs = f.filter(c=>S.favs.includes(c.id)), rest = f.filter(c=>!S.favs.includes(c.id));
+  box.innerHTML = (favs.length ? '<div class="label">محبوب‌ها</div>'+favs.map(row).join("") : "")
+    + (favs.length && rest.length ? '<div class="label">همه</div>' : "") + rest.map(row).join("");
+}
+
+$("list").onclick = async e => {
+  const item = e.target.closest(".item"); if(!item) return;
+  const id = item.dataset.id, act = e.target.dataset.act;
+  if(act==="fav"){
+    S.favs = S.favs.includes(id) ? S.favs.filter(x=>x!==id) : [...S.favs, id]; save(); render(); return;
+  }
+  if(act==="copy"){
+    const c = S.configs.find(x=>x.id===id); if(!c) return;
+    try{ await navigator.clipboard.writeText(c.configData); }
+    catch(_){ const t=document.createElement("textarea"); t.value=c.configData; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+    toast("کپی شد!"); return;
+  }
+  selected = id; render();
+};
+$("search").oninput = e => { q = e.target.value.trim().toLowerCase(); render(); };
+$("power").onclick = () => { S.on = !S.on; save(); applyPower(); };
+$("theme").onclick = () => { S.theme = S.theme==="light" ? "dark" : "light"; save(); applyTheme(); };
+$("openList").onclick = () => show("listView");
+$("back").onclick = () => show("home");
+$("reset").onclick = () => { if(S.configs.length && confirm("همه کانفیگ‌ها پاک شوند؟")){ S.configs=[]; S.favs=[]; selected=null; pings={}; save(); render(); } };
+
+$("add").onclick = () => { $("input").value=""; $("modal").classList.add("on"); setTimeout(()=>$("input").focus(),200); };
+$("cancel").onclick = () => $("modal").classList.remove("on");
+function nameOf(line){
+  try{
+    if(/^vmess:\/\//i.test(line)){ const j=JSON.parse(decodeURIComponent(escape(atob(line.slice(8))))); return j.ps||j.add; }
+    const u = new URL(line); return decodeURIComponent(u.hash.slice(1)) || u.hostname;
+  }catch(e){ return "کانفیگ جدید"; }
+}
+$("save").onclick = () => {
+  const lines = $("input").value.split(/\r?\n/).map(l=>l.trim()).filter(l=>/^[a-z0-9]+:\/\//i.test(l));
+  if(!lines.length){ toast("کانفیگ معتبر پیدا نشد"); return; }
+  const have = new Set(S.configs.map(c=>c.configData));
+  const fresh = lines.filter(l=>!have.has(l)).map(l=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name:nameOf(l), configData:l}));
+  S.configs.push(...fresh); save(); render(); $("modal").classList.remove("on"); toast(fresh.length+" کانفیگ اضافه شد");
+};
+
+// مرورگر ICMP ندارد؛ برای کانفیگ‌های واقعی زمان باز شدن اتصال سنجیده می‌شود، و برای نمونه‌های آزمایشی عدد شبیه‌سازی می‌شود.
+function hostPort(data){
+  try{
+    if(/^vmess:\/\//i.test(data)){ const j=JSON.parse(decodeURIComponent(escape(atob(data.slice(8))))); return [j.add, j.port||"443"]; }
+    const u=new URL(data); return [u.hostname, u.port||"443"];
+  }catch(e){ return [null,null]; }
+}
+async function measure(c){
+  const [h,p] = hostPort(c.configData);
+  if(!h || h.endsWith(".invalid")) return Math.round(40+Math.random()*320);
+  const t0=performance.now(), ctl=new AbortController(), to=setTimeout(()=>ctl.abort(),4000);
+  try{ await fetch((p==="80"?"http":"https")+"://"+h+":"+p+"/",{mode:"no-cors",cache:"no-store",signal:ctl.signal}); }
+  catch(e){ if(ctl.signal.aborted){ clearTimeout(to); return -1; } }
+  clearTimeout(to); return Math.round(performance.now()-t0);
+}
+$("pingAll").onclick = async () => {
+  if(!S.configs.length){ toast("لیست خالی است"); return; }
+  pings={}; render(); toast("در حال تست...");
+  await Promise.all(S.configs.map(async c=>{ pings[c.id]=await measure(c); render(); }));
+  toast("تست تمام شد");
+};
+
+applyTheme(); applyPower();
+</script>
+</body>
+</html>
